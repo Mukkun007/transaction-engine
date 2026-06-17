@@ -38,3 +38,6 @@ services:
 
     App\Domain\Outbox\OutboxRepositoryInterface:
         class: App\Infrastructure\Doctrine\Repository\OutboxRepository
+
+    App\Shared\Clock:
+        class: App\Shared\SystemClock
