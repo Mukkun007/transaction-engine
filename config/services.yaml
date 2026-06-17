@@ -21,3 +21,20 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+    App\Domain\Account\AccountRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\AccountRepository
+
+    App\Domain\Transaction\TransactionRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\TransactionRepository
+
+    App\Domain\Auth\ApiClientRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\ApiClientRepository
+
+    App\Domain\Idempotency\IdempotencyRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\IdempotencyRepository
+
+    App\Domain\Audit\AuditLogRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\AuditLogRepository
+
+    App\Domain\Outbox\OutboxRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\OutboxRepository
