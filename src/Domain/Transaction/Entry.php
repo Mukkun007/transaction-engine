@@ -19,7 +19,7 @@ class Entry
     #[ORM\JoinColumn(nullable: false)]
     private Account $account;
 
-    #[ORM\ManyToOne(targetEntity: Transaction::class)]
+    #[ORM\ManyToOne(targetEntity: Transaction::class, inversedBy: 'entries')]
     #[ORM\JoinColumn(nullable: false)]
     private Transaction $transaction;
 

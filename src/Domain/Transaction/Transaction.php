@@ -6,6 +6,8 @@ use App\Domain\Auth\ApiClient;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'transactions')]
@@ -47,6 +49,9 @@ class Transaction
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $updatedAt;
 
+    #[ORM\OneToMany(targetEntity: Entry::class, mappedBy: 'transaction', cascade: ['persist'])]
+    private Collection $entries;
+
     public function __construct(
         string $reference,
         TransactionType $type,
@@ -66,6 +71,7 @@ class Transaction
         $this->relatedTransaction = null;
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
+        $this->entries = new ArrayCollection();
     }
 
     public function getId(): Uuid { return $this->id; }
@@ -97,5 +103,10 @@ class Transaction
         $this->status = TransactionStatus::Reversed;
         $this->relatedTransaction = $reversal;
         $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function getEntries(): Collection
+    {
+        return $this->entries;
     }
 }
