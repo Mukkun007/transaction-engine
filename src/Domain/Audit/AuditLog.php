@@ -23,10 +23,10 @@ class AuditLog
     #[ORM\Column(type: 'string', enumType: AuditAction::class)]
     private AuditAction $action;
 
-    #[ORM\Column(type: 'json', nullable: true)]
+    #[ORM\Column(name: 'before_data', type: 'json', nullable: true)]
     private ?array $before;
 
-    #[ORM\Column(type: 'json')]
+    #[ORM\Column(name: 'after_data', type: 'json')]
     private array $after;
 
     #[ORM\Column(type: 'string')]

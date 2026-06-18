@@ -10,6 +10,7 @@ security:
 
         main:
             lazy: true
+            stateless: true
             provider: users_in_memory
             custom_authenticators:
                 - App\Infrastructure\Security\ApiKeyAuthenticator
