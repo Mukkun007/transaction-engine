@@ -28,79 +28,79 @@ final class TransferHandler
 
     public function handle(TransferCommand $command): Transaction
     {
-        // Verrouillage pessimiste sur les deux comptes
-        $fromAccount = $this->em->getRepository(Account::class)
-            ->find(Uuid::fromString($command->fromAccountId), \Doctrine\DBAL\LockMode::PESSIMISTIC_WRITE);
+        return $this->em->wrapInTransaction(function() use ($command) {
+            $fromAccount = $this->em->getRepository(Account::class)
+                ->find(Uuid::fromString($command->fromAccountId), \Doctrine\DBAL\LockMode::PESSIMISTIC_WRITE);
 
-        $toAccount = $this->em->getRepository(Account::class)
-            ->find(Uuid::fromString($command->toAccountId), \Doctrine\DBAL\LockMode::PESSIMISTIC_WRITE);
+            $toAccount = $this->em->getRepository(Account::class)
+                ->find(Uuid::fromString($command->toAccountId), \Doctrine\DBAL\LockMode::PESSIMISTIC_WRITE);
 
-        if ($fromAccount === null || $toAccount === null) {
-            throw new \InvalidArgumentException('One or both accounts not found.');
-        }
+            if ($fromAccount === null || $toAccount === null) {
+                throw new \InvalidArgumentException('One or both accounts not found.');
+            }
 
-        $apiClient = $this->apiClientRepository->findById(
-            Uuid::fromString($command->apiClientId)
-        );
+            $apiClient = $this->apiClientRepository->findById(
+                Uuid::fromString($command->apiClientId)
+            );
 
-        if ($apiClient === null) {
-            throw new \InvalidArgumentException('ApiClient not found.');
-        }
+            if ($apiClient === null) {
+                throw new \InvalidArgumentException('ApiClient not found.');
+            }
 
-        $balance = $this->calculateBalance($fromAccount);
+            $balance = $this->calculateBalance($fromAccount);
 
-        if ($balance < $command->amount) {
-            throw new \DomainException('Insufficient funds.');
-        }
+            if ($balance < $command->amount) {
+                throw new \DomainException('Insufficient funds.');
+            }
 
-        $reference = 'TXN-' . strtoupper(substr(uniqid(), -8));
+            $reference = 'TXN-' . strtoupper(substr(uniqid(), -8));
 
-        $transaction = new Transaction(
-            reference: $reference,
-            type: TransactionType::Transfer,
-            amount: $command->amount,
-            currency: $command->currency,
-            apiClient: $apiClient,
-            description: $command->description,
-        );
+            $transaction = new Transaction(
+                reference: $reference,
+                type: TransactionType::Transfer,
+                amount: $command->amount,
+                currency: $command->currency,
+                apiClient: $apiClient,
+                description: $command->description,
+            );
 
-        // Double-entry : débit source + crédit destination
-        $debitEntry = new Entry(
-            account: $fromAccount,
-            transaction: $transaction,
-            type: EntryType::Debit,
-            amount: $command->amount,
-            currency: $command->currency,
-        );
+            new Entry(
+                account: $fromAccount,
+                transaction: $transaction,
+                type: EntryType::Debit,
+                amount: $command->amount,
+                currency: $command->currency,
+            );
 
-        $creditEntry = new Entry(
-            account: $toAccount,
-            transaction: $transaction,
-            type: EntryType::Credit,
-            amount: $command->amount,
-            currency: $command->currency,
-        );
+            new Entry(
+                account: $toAccount,
+                transaction: $transaction,
+                type: EntryType::Credit,
+                amount: $command->amount,
+                currency: $command->currency,
+            );
 
-        $transaction->complete();
-        $this->transactionRepository->save($transaction);
+            $transaction->complete();
+            $this->transactionRepository->save($transaction);
 
-        $this->auditLogRepository->save(new AuditLog(
-            entityType: 'Transaction',
-            entityId: (string) $transaction->getId(),
-            action: AuditAction::Created,
-            after: [
-                'reference' => $transaction->getReference(),
-                'type' => $transaction->getType()->value,
-                'amount' => $transaction->getAmount(),
-                'currency' => $transaction->getCurrency(),
-                'status' => $transaction->getStatus()->value,
-                'from' => $command->fromAccountId,
-                'to' => $command->toAccountId,
-            ],
-            performedBy: $command->apiClientId,
-        ));
+            $this->auditLogRepository->save(new AuditLog(
+                entityType: 'Transaction',
+                entityId: (string) $transaction->getId(),
+                action: AuditAction::Created,
+                after: [
+                    'reference' => $transaction->getReference(),
+                    'type' => $transaction->getType()->value,
+                    'amount' => $transaction->getAmount(),
+                    'currency' => $transaction->getCurrency(),
+                    'status' => $transaction->getStatus()->value,
+                    'from' => $command->fromAccountId,
+                    'to' => $command->toAccountId,
+                ],
+                performedBy: $command->apiClientId,
+            ));
 
-        return $transaction;
+            return $transaction;
+        });
     }
 
     private function calculateBalance(Account $account): int
@@ -108,8 +108,8 @@ final class TransferHandler
         $result = $this->em->createQueryBuilder()
             ->select('SUM(CASE WHEN e.type = :credit THEN e.amount ELSE -e.amount END) as balance')
             ->from(Entry::class, 'e')
-            ->where('e.account = :account')
-            ->setParameter('account', $account)
+            ->where('IDENTITY(e.account) = :accountId')
+            ->setParameter('accountId', $account->getId(), 'uuid')
             ->setParameter('credit', EntryType::Credit->value)
             ->getQuery()
             ->getSingleScalarResult();

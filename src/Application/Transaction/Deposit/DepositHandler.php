@@ -12,6 +12,7 @@ use App\Domain\Transaction\EntryType;
 use App\Domain\Transaction\Transaction;
 use App\Domain\Transaction\TransactionRepositoryInterface;
 use App\Domain\Transaction\TransactionType;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
 final class DepositHandler
@@ -21,6 +22,7 @@ final class DepositHandler
         private TransactionRepositoryInterface $transactionRepository,
         private AuditLogRepositoryInterface $auditLogRepository,
         private ApiClientRepositoryInterface $apiClientRepository,
+        private EntityManagerInterface $em,
     ) {}
 
     public function handle(DepositCommand $command): Transaction
@@ -52,7 +54,6 @@ final class DepositHandler
             description: $command->description,
         );
 
-        // Double-entry : un crédit sur le compte
         $entry = new Entry(
             account: $account,
             transaction: $transaction,
@@ -62,6 +63,7 @@ final class DepositHandler
         );
 
         $transaction->complete();
+        $this->em->persist($entry);
         $this->transactionRepository->save($transaction);
 
         $this->auditLogRepository->save(new AuditLog(
