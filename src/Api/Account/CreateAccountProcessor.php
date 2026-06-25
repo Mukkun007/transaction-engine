@@ -10,6 +10,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 
+/** @implements ProcessorInterface<CreateAccountInput, array<string, string>> */
 final class CreateAccountProcessor implements ProcessorInterface
 {
     public function __construct(
@@ -17,6 +18,7 @@ final class CreateAccountProcessor implements ProcessorInterface
         private Security $security,
     ) {}
 
+    /** @return array<string, string> */
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): mixed
     {
         /** @var CreateAccountInput $data */

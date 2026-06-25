@@ -91,6 +91,7 @@ final class ReverseHandler
         return $reversal;
     }
 
+    /** @return array<int, Entry> */
     private function getEntriesForTransaction(Transaction $transaction): array
     {
         return $transaction->getEntries()->toArray();

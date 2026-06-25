@@ -11,6 +11,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 
+/** @implements ProcessorInterface<TransferInput, TransactionOutput> */
 final class TransferProcessor implements ProcessorInterface
 {
     public function __construct(
@@ -19,7 +20,8 @@ final class TransferProcessor implements ProcessorInterface
     ) {}
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): TransactionOutput
-    {
+    {   
+        /** @var TransferInput $data */
         /** @var ApiClientUser $user */
         $user = $this->security->getUser();
 
